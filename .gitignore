@@ -1,0 +1,7 @@
+video-notes/
+__pycache__/
+.idea/
+*.mp4
+*.mkv
+*.webm
+*.mov

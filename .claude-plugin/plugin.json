@@ -1,0 +1,9 @@
+{
+  "name": "video-to-notes",
+  "description": "Turn any video (YouTube or any yt-dlp URL, or a local screen recording) into a blog post, study notes, how-to or PR description with screenshots, and publish it through whatever connector you have (Notion, Google Docs, ...).",
+  "version": "0.1.0",
+  "author": { "name": "Joy Mridha" },
+  "repository": "https://github.com/Joy9001/video-to-notes",
+  "license": "MIT",
+  "keywords": ["video", "youtube", "transcript", "notes", "blog", "screen-recording", "whisper"]
+}

@@ -174,7 +174,7 @@ def grab(video, times, duration, out):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("source", help="video URL (anything yt-dlp supports) or local file")
-    ap.add_argument("--out", help="output folder (default: ./video-notes/<id>)")
+    ap.add_argument("--out", help="output folder (default: ./tldw/<id>)")
     ap.add_argument("--model", default="small", help="faster-whisper model when there are no captions")
     ap.add_argument("--max-frames", type=int, help="candidate frames (default: ~1 per 12s, 6..45)")
     a = ap.parse_args(argv)
@@ -186,14 +186,14 @@ def main(argv=None):
     try:
         if is_url:
             info = json.loads(run(["yt-dlp", "-J", "--no-playlist", a.source]).stdout)
-            out = Path(a.out or Path("video-notes") / info["id"])
+            out = Path(a.out or Path("tldw") / info["id"])
             out.mkdir(parents=True, exist_ok=True)
             video, meta, subs = download(a.source, info, out)
         else:
             video = Path(a.source).resolve()
             if not video.is_file():
                 die(2, f"Not a URL or an existing file: {a.source}")
-            out = Path(a.out or Path("video-notes") / re.sub(r"[^\w.-]+", "-", video.stem))
+            out = Path(a.out or Path("tldw") / re.sub(r"[^\w.-]+", "-", video.stem))
             out.mkdir(parents=True, exist_ok=True)
             meta, subs = {"title": video.stem, "source": str(video), "chapters": []}, sidecar(video)
 

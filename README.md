@@ -1,6 +1,6 @@
-# video-to-notes
+# tldw
 
-A Claude Code skill that turns a video into a write-up with screenshots: a blog post, study notes, a how-to, or a PR description. Give it a YouTube link (or anything [yt-dlp](https://github.com/yt-dlp/yt-dlp) supports) or a local recording, and optionally have it published to Notion, Google Docs, or whatever connector you already use.
+**Too long; didn't watch.** A Claude Code skill that turns a video into a write-up with screenshots: a blog post, study notes, a how-to, or a PR description. Give it a YouTube link (or anything [yt-dlp](https://github.com/yt-dlp/yt-dlp) supports) or a local recording, and optionally have it published to Notion, Google Docs, or whatever connector you already use.
 
 ## How it works
 
@@ -23,11 +23,11 @@ A Claude Code skill that turns a video into a write-up with screenshots: a blog 
 As a plugin:
 
 ```
-/plugin marketplace add Joy9001/video-to-notes
-/plugin install video-to-notes@video-to-notes
+/plugin marketplace add Joy9001/tldw
+/plugin install tldw@tldw
 ```
 
-Or copy or link `skills/video-to-notes` into `~/.claude/skills/`.
+Or copy or link `skills/tldw` into `~/.claude/skills/`.
 
 ## Use
 
@@ -37,7 +37,7 @@ Ask Claude Code things like:
 - "Write a how-to from ./recording.mp4 and put it in Notion"
 - "PR description from this screen recording: demo.mov"
 
-Output goes to `./video-notes/<id>/`: `note.md`, `transcript.txt`, `meta.json`, `frames/`, `sheets/`.
+Output goes to `./tldw/<id>/`: `note.md`, `transcript.txt`, `meta.json`, `frames/`, `sheets/`.
 
 ## Transcription
 
@@ -50,7 +50,7 @@ A `.vtt` or `.srt` file next to a local video is used instead of Whisper.
 ## The extraction script on its own
 
 ```
-python skills/video-to-notes/scripts/extract.py <url-or-file> [--out DIR] [--model small] [--max-frames N]
+python skills/tldw/scripts/extract.py <url-or-file> [--out DIR] [--model small] [--max-frames N]
 ```
 
 Exit codes: `0` ok, `2` bad input or missing tool, `3` needs Whisper.
@@ -58,7 +58,7 @@ Exit codes: `0` ok, `2` bad input or missing tool, `3` needs Whisper.
 Self-check (needs ffmpeg, no network):
 
 ```
-python skills/video-to-notes/scripts/test_extract.py
+python skills/tldw/scripts/test_extract.py
 ```
 
 ## Notes

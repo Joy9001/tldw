@@ -1,9 +1,9 @@
 ---
-name: video-to-notes
+name: tldw
 description: Turn a video into a polished write-up with screenshots (blog post, study notes, how-to, or PR description) from a YouTube or any yt-dlp-supported URL, or a local recording (screen recording, Loom/Zoom/OBS export). Use when the user gives a video link or file and asks for notes, an article, a summary, docs, a tutorial, or a PR description, optionally published to Notion, Google Docs, or another connected tool.
 ---
 
-# Video to notes
+# tldw: too long; didn't watch
 
 ## 1. Extract
 
@@ -11,7 +11,7 @@ description: Turn a video into a polished write-up with screenshots (blog post, 
 python "<skill dir>/scripts/extract.py" "<url-or-file>" [--out DIR]
 ```
 
-`<skill dir>` is this skill's base directory. Output goes to `./video-notes/<id>/` and the script prints its `out:` path.
+`<skill dir>` is this skill's base directory. Output goes to `./tldw/<id>/` and the script prints its `out:` path.
 
 - **Exit 0**: continue.
 - **Exit 3**: no captions and faster-whisper isn't installed. Tell the user it's a one-time setup (about 500 MB for the model, plus about 1 GB of CUDA libraries when an NVIDIA GPU is detected), then run the `uv run ...` command the script printed. Without `uv`: `pip install faster-whisper` into Python 3.10–3.12, plus `nvidia-cublas-cu12 "nvidia-cudnn-cu12==9.*"` for GPU.

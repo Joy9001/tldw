@@ -1,10 +1,10 @@
 {
-  "name": "video-to-notes",
+  "name": "tldw",
   "owner": { "name": "Joy Mridha" },
   "metadata": { "description": "Claude Code skill: turn any video into notes, blog posts, how-tos or PR descriptions with screenshots." },
   "plugins": [
     {
-      "name": "video-to-notes",
+      "name": "tldw",
       "source": "./",
       "description": "Turn any video into a polished write-up with screenshots."
     }

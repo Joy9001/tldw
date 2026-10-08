@@ -4,6 +4,11 @@
 
 ## How it works
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/how-it-works-dark.png">
+  <img alt="How tldw works: you give it a video and a request; extract.py fetches the video, transcribes it and ranks key frames; Claude reads the transcript and frames, picks screenshots and writes note.md; your connectors publish it only if you ask." src="docs/how-it-works.png">
+</picture>
+
 1. **Transcript.** Uses the video's captions when they exist. For raw recordings it runs [faster-whisper](https://github.com/SYSTRAN/faster-whisper) locally. No API keys.
 2. **Candidate frames.** Ranks ffmpeg scene changes instead of using a fixed threshold, so small UI changes in screen recordings aren't missed the way a slide-deck threshold would miss them.
 3. **Contact sheets.** Tiles the candidates 9 per image with `#n mm:ss` labels, so Claude can review ~40 frames cheaply, pick the ones that show each step, and grab an exact frame from a transcript timestamp when a candidate is missing.

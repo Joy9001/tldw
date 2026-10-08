@@ -15,6 +15,7 @@ import re
 import shutil
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 FONTS = ["C:/Windows/Fonts/arial.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf",
@@ -83,12 +84,17 @@ def pick_subs(info):
 
 def download(url, info, out):
     key, auto = pick_subs(info)
-    cmd = ["yt-dlp", "-q", "--no-warnings", "--no-playlist", "-f", "bv*[height<=1080]+ba/b[height<=1080]/b",
-           "-o", out / "video.%(ext)s", url]
+    info_file = out / "info.json"  # reuse the -J metadata instead of extracting the page a second time
+    info_file.write_text(json.dumps(info), encoding="utf-8")
+    cmd = ["yt-dlp", "-q", "--no-warnings", "-f", "bv*[height<=1080]+ba/b[height<=1080]/b",
+           "-o", out / "video.%(ext)s", "--load-info-json", info_file]
     if key:
         cmd += ["--write-auto-subs" if auto else "--write-subs", "--sub-langs", key,
                 "--sub-format", "vtt/best", "--convert-subs", "vtt"]
-    run(cmd)
+    try:
+        run(cmd)
+    finally:
+        info_file.unlink(missing_ok=True)
     video = next(p for p in out.glob("video.*") if p.suffix not in (".vtt", ".part", ".ytdl", ".json"))
     sub = out / f"video.{key}.vtt"
     meta = {"title": info.get("title"), "source": url, "uploader": info.get("uploader"),
@@ -105,26 +111,33 @@ def sidecar(video):
     return None
 
 
-def transcribe(video, model):
+def load_whisper():
+    """faster-whisper's classes, or exit 3 with the command that installs it."""
     # NVIDIA's pip wheels (nvidia-cublas-cu12, nvidia-cudnn-cu12) keep their DLLs where Windows won't look.
     spec = importlib.util.find_spec("nvidia")
     dirs = [d for root in (spec.submodule_search_locations if spec else []) for d in glob.glob(os.path.join(root, "*", "bin"))]
     os.environ["PATH"] = os.pathsep.join(dirs + [os.environ.get("PATH", "")])
     try:
-        import numpy as np
-        from faster_whisper import WhisperModel
+        from faster_whisper import BatchedInferencePipeline, WhisperModel
     except ImportError:
         args = " ".join(f'"{a}"' for a in sys.argv)
         gpu = ' --with nvidia-cublas-cu12 --with "nvidia-cudnn-cu12==9.*"' if shutil.which("nvidia-smi") else ""
         die(3, "No captions found and faster-whisper is not installed. Re-run with:\n"
                f"  uv run --no-project --python 3.12 --with faster-whisper{gpu} python {args}")
+    return WhisperModel, BatchedInferencePipeline
+
+
+def transcribe(video, model, whisper):
+    import numpy as np  # installed alongside faster-whisper
+    WhisperModel, BatchedInferencePipeline = whisper
     # Decode with ffmpeg ourselves: faster-whisper's PyAV path breaks on newer PyAV releases.
     pcm = subprocess.run(["ffmpeg", "-v", "error", "-i", str(video), "-ac", "1", "-ar", "16000", "-f", "f32le", "-"],
                          capture_output=True, check=True).stdout
     audio = np.frombuffer(pcm, np.float32)
     for device in ("auto", "cpu"):
         try:
-            segs, info = WhisperModel(model, device=device, compute_type="int8").transcribe(audio, vad_filter=True)
+            pipeline = BatchedInferencePipeline(WhisperModel(model, device=device, compute_type="int8"))
+            segs, info = pipeline.transcribe(audio, vad_filter=True, batch_size=8)  # ~1.8x faster than sequential
             return [(s.start, s.text.strip()) for s in segs], f"whisper {model} ({info.language})"
         except RuntimeError as e:  # e.g. CUDA picked but cuBLAS missing
             if device == "cpu":
@@ -156,8 +169,8 @@ def grab(video, times, duration, out):
         shutil.rmtree(d, ignore_errors=True)
         d.mkdir(parents=True)
     font = next((f"fontfile='{f.replace(':', chr(92) + ':')}':" for f in FONTS if Path(f).exists()), "")
-    result = []
-    for i, t in enumerate(times, 1):
+
+    def one(i, t):
         at = max(0.0, min(t + SETTLE, duration - 0.1))
         name = f"{i:03d}_{ts(at).replace(':', '-')}.jpg"
         label = f"#{i} " + ts(at).replace(":", "\\:")
@@ -166,7 +179,10 @@ def grab(video, times, duration, out):
              "-vf", f"scale=640:640:force_original_aspect_ratio=decrease:force_divisible_by=2,drawtext={font}text='{label}':x=10:y=10:fontsize=30:fontcolor=white"
                     ":box=1:boxcolor=black@0.7:boxborderw=6",
              "-frames:v", "1", thumbs / f"{i:03d}.jpg"])
-        result.append({"n": i, "time": ts(at), "seconds": round(at, 2), "file": f"frames/{name}"})
+        return {"n": i, "time": ts(at), "seconds": round(at, 2), "file": f"frames/{name}"}
+
+    with ThreadPoolExecutor(4) as pool:  # ponytail: 4 seek-and-decode jobs measured 1.5x; 8 gained nothing
+        result = list(pool.map(one, range(1, len(times) + 1), times))
     run(["ffmpeg", "-v", "error", "-y", "-i", thumbs / "%03d.jpg", "-vf", "tile=3x3:padding=6:color=white",
          sheets / "sheet_%02d.jpg"])
     shutil.rmtree(thumbs)
@@ -213,11 +229,16 @@ def main(argv=None):
                                                 for c in probe.get("chapters", [])]
 
         lines, source = (parse_subs(subs[0]), subs[1]) if subs else ([], None)
-        if not lines:
-            lines, source = transcribe(video, a.model) if has_audio else ([], "none (no audio track)")
+        if not lines and not has_audio:
+            source = "none (no audio track)"
+        whisper = load_whisper() if not lines and has_audio else None  # exits 3 before any slow work
+        with ThreadPoolExecutor(1) as pool:  # Whisper runs on the GPU while the scene pass uses the CPU
+            job = pool.submit(transcribe, video, a.model, whisper) if whisper else None
+            scores = scene_scores(video) if has_video else []
+            if job:
+                lines, source = job.result()
         (out / "transcript.txt").write_text(paragraphs(lines), encoding="utf-8")
 
-        scores = scene_scores(video) if has_video else []
         # Browser-recorded webm often carries no duration; the last decoded frame stands in.
         duration = float(probe["format"].get("duration") or 0) or (scores[-1][0] if scores else 0.0)
         k = a.max_frames or max(6, min(45, round(duration / 12)))  # ponytail: naive density heuristic

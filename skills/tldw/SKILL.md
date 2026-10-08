@@ -15,11 +15,13 @@ python "<skill dir>/scripts/extract.py" "<url-or-file>" [--out DIR]
 
 - **Exit 0**: continue.
 - **Exit 3**: no captions and faster-whisper isn't installed. Tell the user it's a one-time setup (about 500 MB for the model, plus about 1 GB of CUDA libraries when an NVIDIA GPU is detected), then run the `uv run ...` command the script printed. Without `uv`: `pip install faster-whisper` into Python 3.10–3.12, plus `nvidia-cublas-cu12 "nvidia-cudnn-cu12==9.*"` for GPU.
-- **Exit 2**: show the error (missing tool, bad input, download failure) and stop.
+- **Exit 2**: show the error (missing tool, bad input, download failure, playlist or live-stream URL) and stop.
 
 Before transcribing a video over 30 minutes with no captions, warn that CPU transcription takes roughly half the video's length, and offer `--model base` for speed.
 
 A local file with a matching `.vtt`/`.srt` next to it uses those captions instead of Whisper.
+
+Two cases change what you can write. `transcript: "none (no audio track)"` is a silent recording: work from the frames alone and tell the user there was no narration. Empty `frames` means an audio-only file: write without screenshots.
 
 ## 2. Understand
 

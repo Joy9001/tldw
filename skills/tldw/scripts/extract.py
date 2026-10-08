@@ -40,17 +40,19 @@ def ts(t):
 
 
 def parse_subs(text):
-    """VTT/SRT -> [(seconds, line)]. Drops tags and the repeated lines of rolling auto-captions."""
+    """VTT/SRT -> [(seconds, line)]. Drops cue ids, tags and the repeated lines of rolling auto-captions."""
     out, last, t = [], None, None
-    for line in text.splitlines():
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
         m = CUE.match(line)
         if m:
             h, mi, s, ms = m.groups()
             t = int(h or 0) * 3600 + int(mi) * 60 + int(s) + int(ms) / 10 ** len(ms)
             continue
+        if i + 1 < len(lines) and CUE.match(lines[i + 1]):
+            continue  # a VTT cue id or SRT index sits right above its timestamp
         line = html.unescape(re.sub(r"<[^>]+>", "", line)).replace("\xa0", " ").strip()
-        # ponytail: digit-only lines are treated as SRT cue numbers
-        if t is None or not line or line.isdigit() or line == last:
+        if t is None or not line or line == last:
             continue
         out.append((t, line))
         last = line
@@ -161,7 +163,7 @@ def grab(video, times, duration, out):
         label = f"#{i} " + ts(at).replace(":", "\\:")
         run(["ffmpeg", "-v", "error", "-y", "-ss", f"{at:.2f}", "-i", video,
              "-frames:v", "1", "-q:v", "2", frames / name,
-             "-vf", f"scale=640:-2,drawtext={font}text='{label}':x=10:y=10:fontsize=30:fontcolor=white"
+             "-vf", f"scale=640:640:force_original_aspect_ratio=decrease:force_divisible_by=2,drawtext={font}text='{label}':x=10:y=10:fontsize=30:fontcolor=white"
                     ":box=1:boxcolor=black@0.7:boxborderw=6",
              "-frames:v", "1", thumbs / f"{i:03d}.jpg"])
         result.append({"n": i, "time": ts(at), "seconds": round(at, 2), "file": f"frames/{name}"})
@@ -185,7 +187,11 @@ def main(argv=None):
             die(2, f"{tool} not found on PATH. Install it (yt-dlp: `pip install yt-dlp`, ffmpeg: https://ffmpeg.org/download.html).")
     try:
         if is_url:
-            info = json.loads(run(["yt-dlp", "-J", "--no-playlist", a.source]).stdout)
+            info = json.loads(run(["yt-dlp", "-J", "--no-playlist", "--flat-playlist", a.source]).stdout)
+            if info.get("_type") == "playlist":
+                die(2, "That URL is a playlist or channel; pass a single video URL.")
+            if info.get("is_live"):
+                die(2, "Live streams aren't supported; try again once the stream has ended.")
             out = Path(a.out or Path("tldw") / info["id"])
             out.mkdir(parents=True, exist_ok=True)
             video, meta, subs = download(a.source, info, out)
@@ -198,18 +204,24 @@ def main(argv=None):
             meta, subs = {"title": video.stem, "source": str(video), "chapters": []}, sidecar(video)
 
         probe = json.loads(run(["ffprobe", "-v", "error", "-print_format", "json",
-                                "-show_format", "-show_chapters", video]).stdout)
-        duration = float(probe["format"]["duration"])
+                                "-show_format", "-show_streams", "-show_chapters", video]).stdout)
+        streams = probe.get("streams", [])
+        has_audio = any(s.get("codec_type") == "audio" for s in streams)
+        has_video = any(s.get("codec_type") == "video" and not s.get("disposition", {}).get("attached_pic")
+                        for s in streams)  # an mp3's cover art is a "video" stream too
         meta["chapters"] = meta["chapters"] or [{"start": float(c["start_time"]), "title": c.get("tags", {}).get("title", "")}
                                                 for c in probe.get("chapters", [])]
 
         lines, source = (parse_subs(subs[0]), subs[1]) if subs else ([], None)
         if not lines:
-            lines, source = transcribe(video, a.model)
+            lines, source = transcribe(video, a.model) if has_audio else ([], "none (no audio track)")
         (out / "transcript.txt").write_text(paragraphs(lines), encoding="utf-8")
 
+        scores = scene_scores(video) if has_video else []
+        # Browser-recorded webm often carries no duration; the last decoded frame stands in.
+        duration = float(probe["format"].get("duration") or 0) or (scores[-1][0] if scores else 0.0)
         k = a.max_frames or max(6, min(45, round(duration / 12)))  # ponytail: naive density heuristic
-        frames, sheets = grab(video, pick_times(scene_scores(video), k), duration, out)
+        frames, sheets = grab(video, pick_times(scores, k), duration, out) if has_video else ([], [])
     except subprocess.CalledProcessError as e:
         die(2, f"{Path(str(e.cmd[0])).name} failed:\n{(e.stderr or '')[-2000:]}")
 

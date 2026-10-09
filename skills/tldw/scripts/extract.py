@@ -86,13 +86,20 @@ def download(url, info, out):
     key, auto = pick_subs(info)
     info_file = out / "info.json"  # reuse the -J metadata instead of extracting the page a second time
     info_file.write_text(json.dumps(info), encoding="utf-8")
-    cmd = ["yt-dlp", "-q", "--no-warnings", "-f", "bv*[height<=1080]+ba/b[height<=1080]/b",
-           "-o", out / "video.%(ext)s", "--load-info-json", info_file]
+    cmd = ["yt-dlp", "-q", "--no-warnings", "-f", "bv*[height<=1080]+ba/b[height<=1080]/b", "-o", out / "video.%(ext)s"]
     if key:
         cmd += ["--write-auto-subs" if auto else "--write-subs", "--sub-langs", key,
                 "--sub-format", "vtt/best", "--convert-subs", "vtt"]
+    # YouTube sometimes refuses a stream once (HTTP 403) and serves it on the next try. Retries re-extract
+    # from the URL, because the stream links in the saved metadata may be the ones it just refused.
     try:
-        run(cmd)
+        for attempt, source in enumerate((["--load-info-json", info_file], [url], [url])):
+            try:
+                run(cmd + source)
+                break
+            except subprocess.CalledProcessError:
+                if attempt == 2:
+                    raise
     finally:
         info_file.unlink(missing_ok=True)
     video = next(p for p in out.glob("video.*") if p.suffix not in (".vtt", ".part", ".ytdl", ".json"))

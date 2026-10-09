@@ -185,6 +185,26 @@ def test_bad_inputs():
         assert run(d / "notes.txt", d / "b")[0] == 2
 
 
+def test_download_retries_after_a_refusal():
+    calls = []
+
+    def fake_run(cmd):
+        cmd = [str(c) for c in cmd]
+        calls.append(cmd)
+        if len(calls) == 1:  # like YouTube's one-off 403
+            raise subprocess.CalledProcessError(1, cmd, stderr="HTTP Error 403: Forbidden")
+        Path(cmd[cmd.index("-o") + 1].replace("%(ext)s", "mp4")).write_bytes(b"")
+
+    with tempfile.TemporaryDirectory() as d:
+        real_run, extract.run = extract.run, fake_run
+        try:
+            video, _, _ = extract.download("https://example.com/v", {"title": "t"}, Path(d))
+        finally:
+            extract.run = real_run
+        assert video.name == "video.mp4" and not (Path(d) / "info.json").exists()
+    assert len(calls) == 2 and "--load-info-json" in calls[0] and calls[1][-1] == "https://example.com/v", calls
+
+
 # --- online: real sites. Each URL was checked when added; replace any that rot. -------------------------
 PLAYLIST = "UU-KqnO3ez7vF-kyIQ_22rdA"  # a channel's uploads playlist
 ONLINE = [

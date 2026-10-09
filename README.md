@@ -1,6 +1,6 @@
 # tldw
 
-**Too long; didn't watch.** A Claude Code skill that turns a video into a write-up with screenshots: a blog post, study notes, a how-to, or a PR description. Give it a YouTube link (or anything [yt-dlp](https://github.com/yt-dlp/yt-dlp) supports) or a local recording, and optionally have it published to Notion, Google Docs, or whatever connector you already use.
+**Too long; didn't watch.** A Claude Code skill that turns a video into a write-up with screenshots: an explanation doc, a how-to, a PR description, study notes, or a blog post. Give it a YouTube link (or anything [yt-dlp](https://github.com/yt-dlp/yt-dlp) supports) or a local recording, and optionally have it published to Notion, Google Docs, or whatever connector you already use.
 
 ## How it works
 
@@ -12,7 +12,7 @@
 1. **Transcript.** Uses the video's captions when they exist. For raw recordings it runs [faster-whisper](https://github.com/SYSTRAN/faster-whisper) locally. No API keys.
 2. **Candidate frames.** Ranks ffmpeg scene changes instead of using a fixed threshold, so small UI changes in screen recordings aren't missed the way a slide-deck threshold would miss them.
 3. **Contact sheets.** Tiles the candidates 9 per image with `#n mm:ss` labels, so Claude can review ~40 frames cheaply, pick the ones that show each step, and grab an exact frame from a transcript timestamp when a candidate is missing.
-4. **Write-up.** Picks the format that fits the video (or the one you ask for) and writes `note.md`.
+4. **Write-up.** Uses the format you ask for. If you don't name one, it asks, and writes an explanation doc if you have no preference. The result is `note.md`.
 5. **Publish.** Uses the tools Claude already has connected. There is no integration code in this repo.
 
 ## Requirements

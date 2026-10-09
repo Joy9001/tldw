@@ -1,11 +1,23 @@
 ---
 name: tldw
-description: Turn a video into a polished write-up with screenshots (blog post, study notes, how-to, or PR description) from a YouTube or any yt-dlp-supported URL, or a local recording (screen recording, Loom/Zoom/OBS export). Use when the user gives a video link or file and asks for notes, an article, a summary, docs, a tutorial, or a PR description, optionally published to Notion, Google Docs, or another connected tool.
+description: Turn a video into a polished write-up with screenshots (explanation doc, how-to, PR description, study notes, or blog post) from a YouTube or any yt-dlp-supported URL, or a local recording (screen recording, Loom/Zoom/OBS export). Use when the user gives a video link or file and asks for notes, an article, a summary, docs, a tutorial, or a PR description, optionally published to Notion, Google Docs, or another connected tool.
 ---
 
 # tldw: too long; didn't watch
 
-## 1. Extract
+## 1. Agree on the format
+
+Use the format the user asked for. If they didn't name one, ask before doing anything else, offering:
+
+- **Explanation doc**: what the video covers, explained section by section
+- **How-to**: step-by-step instructions for a task shown in the video
+- **PR description**: a code change shown in the video, written up for review
+- **Study notes**: condensed notes for learning from a lecture, talk or course
+- **Blog post**: an article for readers who haven't seen the video
+
+If the user answers without choosing, or you can't ask (for example in a non-interactive run), write an **Explanation doc**.
+
+## 2. Extract
 
 ```
 python "<skill dir>/scripts/extract.py" "<url-or-file>" [--out DIR]
@@ -23,17 +35,9 @@ A local file with a matching `.vtt`/`.srt` next to it uses those captions instea
 
 Two cases change what you can write. `transcript: "none (no audio track)"` is a silent recording: work from the frames alone and tell the user there was no narration. Empty `frames` means an audio-only file: write without screenshots.
 
-## 2. Understand
+## 3. Understand
 
 Read `meta.json` (title, description, chapters, `video` path, `frames` list) and `transcript.txt` (paragraphs prefixed with `[mm:ss]`). Chapters are the default outline when present.
-
-## 3. Choose the format
-
-The user's explicit request wins. Otherwise infer and state the choice in one line:
-
-- Someone operating software step by step (screen recording, demo, tutorial) → **How-to**. If it presents a change or fix to a codebase → **PR description**.
-- Lecture, talk, course, explainer → **Study notes**.
-- Anything else → **Blog post**.
 
 ## 4. Pick screenshots
 
@@ -54,6 +58,18 @@ Write `<out>/note.md` with relative image links: `![what it shows](frames/007_02
 - Never invent steps, flags or results that aren't in the video.
 - Link timestamps where useful (YouTube: add `t=<seconds>` to the URL's query string).
 - Someone else's video: write it as notes with credit and a link, without long verbatim quotes.
+
+### Explanation doc
+```
+# <Video title>, explained
+**Source:** [<title>](<url>) · <duration>
+## What it covers
+<2–3 sentences: the subject and the main point>
+## <One section per chapter/topic> (mm:ss)
+<what is shown and said, explained plainly; a screenshot where it helps>
+## Key points
+- ...
+```
 
 ### Blog post
 ```

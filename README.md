@@ -42,7 +42,7 @@ Ask Claude Code things like:
 - "Write a how-to from ./recording.mp4 and put it in Notion"
 - "PR description from this screen recording: demo.mov"
 
-Output goes to `./tldw/<id>/`: `note.md`, `transcript.txt`, `meta.json`, `frames/`, `sheets/`.
+Output goes to `./tldw/<id>/`: `note.md`, `transcript.txt`, `meta.json`, `frames/`, `sheets/`. Once the note is delivered, Claude deletes the downloaded video and the unused frames (about 70 MB down to about 1 MB for a 6-minute video); ask it to keep them if you want.
 
 ## Transcription
 

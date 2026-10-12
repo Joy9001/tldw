@@ -120,3 +120,11 @@ Source: [<video title>](<url>)
 - **Destination named** (Notion, Google Docs, Confluence, ...): publish with the connected tool for it. Don't write integration code or ask for API keys. If no such tool is connected, say so and deliver `note.md`.
 - **Images**: upload them with the connector's file or attachment tool if it has one. Otherwise put `[Screenshot: frames/007_02-15.jpg: <caption>]` at each spot and tell the user which files to drag in.
 - Publish only where the user asked.
+
+Then clean up, unless the user asked to keep everything:
+
+- If `meta.source` is a URL, delete the downloaded `<out>/video.*` files. Never delete a local file the user gave you.
+- Delete the frames `note.md` doesn't link to, and the `sheets/` folder.
+- Keep `note.md`, the frames it links to, `transcript.txt` and `meta.json`.
+
+Tell the user how much space was freed. More screenshots later means re-running the extraction.

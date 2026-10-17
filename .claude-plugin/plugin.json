@@ -3,7 +3,10 @@
   "description": "Turn any video (YouTube or any yt-dlp URL, or a local screen recording) into an explanation doc, how-to, PR description, study notes or blog post with screenshots, and publish it through whatever connector you have (Notion, Google Docs, ...). Needs Claude Code on your own computer (runs ffmpeg and yt-dlp locally).",
   "version": "0.1.1",
   "author": { "name": "Joy Mridha" },
+  "displayName": "tldw: video to notes",
   "homepage": "https://github.com/Joy9001/tldw#readme",
+  "documentationUrl": "https://github.com/Joy9001/tldw#readme",
+  "privacyPolicyUrl": "https://github.com/Joy9001/tldw#what-it-downloads-and-what-it-sends",
   "repository": "https://github.com/Joy9001/tldw",
   "license": "MIT",
   "keywords": ["video", "youtube", "transcript", "notes", "blog", "screen-recording", "whisper"]

@@ -17,7 +17,7 @@
 
 ## Requirements
 
-- [Claude Code](https://claude.com/claude-code)
+- [Claude Code](https://claude.com/claude-code) on your own computer. The skill runs local tools, so it doesn't work in claude.ai chat
 - Python 3.10+
 - `ffmpeg` and `ffprobe` on `PATH`
 - `yt-dlp` on `PATH` (for URLs only)
@@ -65,6 +65,20 @@ Self-check (needs ffmpeg, no network):
 ```
 python skills/tldw/scripts/test_extract.py
 ```
+
+## What it downloads and what it sends
+
+tldw sends nothing to its author and has no analytics of its own. It runs these tools on your machine, and each one contacts its own server:
+
+- **yt-dlp** downloads the video (and its captions) from the site the URL points to. Local files are never uploaded.
+- **faster-whisper** downloads its Whisper model from Hugging Face the first time it runs. Transcription itself is local.
+- **uv** installs faster-whisper (and, with an NVIDIA GPU, NVIDIA's CUDA libraries) from PyPI, and downloads Python 3.12 if you don't have it.
+
+Claude reads the transcript and frames to write the note, as it would any file you give it. Publishing to Notion, Google Docs or another connector happens only if you ask.
+
+## Support
+
+Questions and bugs: [GitHub Issues](https://github.com/Joy9001/tldw/issues).
 
 ## Notes
 

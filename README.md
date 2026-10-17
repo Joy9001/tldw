@@ -74,6 +74,8 @@ tldw sends nothing to its author and has no analytics of its own. It runs these 
 - **faster-whisper** downloads its Whisper model from Hugging Face the first time it runs. Transcription itself is local.
 - **uv** installs faster-whisper (and, with an NVIDIA GPU, NVIDIA's CUDA libraries) from PyPI, and downloads Python 3.12 if you don't have it.
 
+The skill has Claude run these commands locally through Claude Code, under your normal permission prompts: `extract.py`, `ffmpeg`, `ffprobe`, `yt-dlp` and `uv run`. They write files to `./tldw/<id>/` in your working directory and, once the note is delivered, delete the downloaded video and unused frames there. There are no hooks, background processes or MCP servers.
+
 Claude reads the transcript and frames to write the note, as it would any file you give it. Publishing to Notion, Google Docs or another connector happens only if you ask.
 
 ## Support

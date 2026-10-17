@@ -32,6 +32,12 @@ As a plugin:
 /plugin install tldw@tldw
 ```
 
+With the [skills.sh](https://skills.sh) CLI:
+
+```
+npx skills add Joy9001/tldw
+```
+
 Or copy or link `skills/tldw` into `~/.claude/skills/`.
 
 ## Use
